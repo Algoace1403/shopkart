@@ -1,7 +1,6 @@
 // Load PORT, MONGODB_URI and JWT_SECRET from .env before starting the server.
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const customerRoutes = require('./routes/customer.routes');
@@ -29,7 +28,7 @@ app.use((error, req, res, next) => {
 
 // Start only when running this file directly; tests can import app without starting it.
 if (require.main === module) {
-  mongoose.connect(process.env.MONGODB_URI)
+  require('./config/database')()
     .then(async () => {
       // Wait for the unique email index before accepting registrations.
       await require('./models/customer.model').init();

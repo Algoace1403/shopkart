@@ -223,3 +223,13 @@ For manual review: add products → checkout → test invalid fields → cancel 
 Implementation scope: stock is checked at payment-order creation; this lab does not reserve or decrement inventory. An unchanged cart is cleared after verified payment. If another tab edits the cart while payment is open, its newer contents are preserved using a cart revision check. Paid persistence and cart clearing are recoverable through a repeated verification request, without requiring a MongoDB replica set. Payment callbacks must reach the application; automatic webhook reconciliation is outside this lab implementation.
 
 Lab 06 verification completed: all 12 backend tests pass; frontend build and lint pass. Headless browser checks with mocked API/gateway responses passed shipping validation, cancelled/failed payments, verification retry without another payment, Cart (0), confirmation reload, order history, empty/error/retry states and mobile layout, with no JavaScript page errors. An actual Razorpay-hosted Test Mode payment remains unverified until test keys are configured.
+
+## Vercel deployment
+
+Live site: https://shopkart-self.vercel.app
+
+The repository root contains `vercel.json`. Vercel builds `frontend/dist` and runs the Express backend through `api/index.js`. Production browser requests use `/api` on the same domain, preserving secure authentication cookies. The database connection is reused across warm function invocations with a bounded connection pool.
+
+Configure `MONGODB_URI` and `JWT_SECRET` as private Vercel production environment variables, with `NODE_ENV=production`. Add Razorpay **test** keys there to enable payments; they are not currently configured. Do not upload `.env` files. `.vercelignore` excludes local environment files and installed dependencies.
+
+Deploy from the repository root with `vercel --prod`. The initial deployment used the CLI; automatic GitHub deployment integration was not established. Atlas network access was configured for this lab with an explicitly approved `0.0.0.0/0` entry. Existing local records were not migrated, so Atlas starts with new application data.
