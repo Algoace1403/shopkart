@@ -1,0 +1,2467 @@
+{
+  "info": {
+    "name": "ShopKart - Labs 01 to 06",
+    "description": "Run requests in order. Tests authentication, product catalog, wishlist and shopping cart, including listed bonuses and validation errors. Creates a unique test customer and product; login cookies are handled automatically.\nLab 06 adds checkout/payment requests. Successful payment verification uses the real Razorpay Test Checkout response in the React app; no secret is stored in this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Register customer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Postman Test Customer\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"9876543210\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('email', 'shopkart-postman-' + pm.variables.replaceIn('{{$guid}}') + '@example.com');",
+              "pm.collectionVariables.set('password', 'labTest123');",
+              "pm.collectionVariables.set('newPassword', 'labTest456');",
+              "pm.collectionVariables.unset('productId');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Customer created', function () { pm.expect(pm.response.json().customer.email).to.eql(pm.collectionVariables.get('email')); });",
+              "pm.collectionVariables.set('customerId', pm.response.json().customer._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Duplicate email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Postman Test Customer\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"9876543210\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Missing registration fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Short password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Postman Test Customer\",\n  \"email\": \"{{email}}\",\n  \"password\": \"short\",\n  \"phone\": \"9876543210\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Invalid login credentials",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"wrong-password\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('JWT is in an HttpOnly cookie', function () { pm.expect(pm.response.headers.get('Set-Cookie')).to.match(/jwt=.+;.*HttpOnly/i); });",
+              "pm.test('Login returns customer information', function () { pm.expect(pm.response.json().customer.email).to.eql(pm.collectionVariables.get('email')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Protected profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/customers/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Profile belongs to current customer', function () { pm.expect(pm.response.json()._id).to.eql(pm.collectionVariables.get('customerId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Change password - incorrect old password",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/change-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"wrong-password\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Change password - short new password",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/change-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"{{password}}\",\n  \"newPassword\": \"short\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Change password",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/change-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Old password rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 New password works",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/customers/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Cookie is cleared', function () { pm.expect(pm.response.headers.get('Set-Cookie')).to.match(/jwt=;/); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Profile after logout",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/customers/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Change password without login",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/change-password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"oldPassword\": \"{{newPassword}}\",\n  \"newPassword\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Create product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Mechanical Keyboard {{productTag}}\",\n  \"description\": \"RGB mechanical keyboard with blue switches.\",\n  \"price\": 2999,\n  \"category\": \"Electronics\",\n  \"image\": \"https://example.com/keyboard.jpg\",\n  \"stock\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('productTag', pm.variables.replaceIn('{{$guid}}')); "
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Product saved with creation date', function () { const p = pm.response.json(); pm.expect(p._id).to.be.a('string'); pm.expect(p.createdAt).to.be.a('string'); });",
+              "pm.collectionVariables.set('productId', pm.response.json()._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 List products",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('List contains created product', function () { const data = pm.response.json(); pm.expect(data.count).to.eql(data.products.length); pm.expect(data.products.some(p => p._id === pm.collectionVariables.get('productId'))).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Product details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Correct product details', function () { const p = pm.response.json(); pm.expect(p._id).to.eql(pm.collectionVariables.get('productId')); pm.expect(p.description).to.eql('RGB mechanical keyboard with blue switches.'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Case insensitive name search",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?search=MECHANICAL%20KEYBOARD%20{{productTag}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Search finds only the test product', function () { const d = pm.response.json(); pm.expect(d.count).to.eql(1); pm.expect(d.products[0]._id).to.eql(pm.collectionVariables.get('productId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Category filter",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?category=Electronics"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Only Electronics products returned', function () { const p = pm.response.json().products; pm.expect(p.length).to.be.above(0); pm.expect(p.every(x => x.category === 'Electronics')).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Combined filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?search={{productTag}}&category=Electronics"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Both filters match', function () { pm.expect(pm.response.json().count).to.eql(1); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Empty result",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?search={{productTag}}&category=Books"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Nonmatching category returns empty list', function () { pm.expect(pm.response.json().products).to.eql([]); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sort price_asc",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?sort=price_asc"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Products sorted by price', function () { const prices = pm.response.json().products.map(p => p.price); pm.expect(prices.every((p,i) => i === 0 || prices[i-1] <= p)).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sort price_desc",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products?sort=price_desc"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });",
+              "pm.test('Products sorted by price', function () { const prices = pm.response.json().products.map(p => p.price); pm.expect(prices.every((p,i) => i === 0 || prices[i-1] >= p)).to.be.true; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Missing product fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zero price rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Mechanical Keyboard {{productTag}}\",\n  \"description\": \"RGB mechanical keyboard with blue switches.\",\n  \"price\": 0,\n  \"category\": \"Electronics\",\n  \"image\": \"https://example.com/keyboard.jpg\",\n  \"stock\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Negative stock rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Mechanical Keyboard {{productTag}}\",\n  \"description\": \"RGB mechanical keyboard with blue switches.\",\n  \"price\": 2999,\n  \"category\": \"Electronics\",\n  \"image\": \"https://example.com/keyboard.jpg\",\n  \"stock\": -1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid product ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products/invalid-id"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Missing product",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/products/000000000000000000000000"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Response is JSON', function () { pm.response.to.be.json; });",
+              "pm.test('No password in response', function () { pm.expect(pm.response.text()).not.to.include('\"password\"'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: GET requires login",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: POST requires login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: DELETE requires login",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: GET requires login",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: POST requires login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: DELETE requires login",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: PATCH requires login",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login for wishlist and cart",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"{{newPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: empty initially",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Empty', () => { pm.expect(pm.response.json().wishlist).to.have.lengthOf(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: invalid ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/invalid"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: missing product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/000000000000000000000001"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "wishlist: remove absent item",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: empty initially",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Empty', () => { pm.expect(pm.response.json().cart).to.have.lengthOf(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: invalid ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/invalid"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: missing product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/000000000000000000000001"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "cart: remove absent item",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: save product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: reject duplicate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: populated products",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Count and product', () => { const d=pm.response.json(); pm.expect(d.count).to.eql(1); pm.expect(d.wishlist[0]._id).to.eql(pm.collectionVariables.get(\"productId\")); pm.expect(d.wishlist[0]).to.have.keys(\"_id\",\"name\",\"price\",\"category\",\"image\",\"stock\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: remove product",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: empty after removal",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Empty', () => { pm.expect(pm.response.json().count).to.eql(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: invalid toggle ID",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/invalid/toggle"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: missing toggle product",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/000000000000000000000001/toggle"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: toggle on",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}/toggle"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Toggle saved state', () => pm.expect(pm.response.json().saved).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: toggle off",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}/toggle"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Toggle saved state', () => pm.expect(pm.response.json().saved).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: save again for persistence",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: add produces quantity 1",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('One row and quantity', () => { const c=pm.response.json().cart; pm.expect(c).to.have.lengthOf(1); pm.expect(c[0].quantity).to.eql(1); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: add produces quantity 2",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('One row and quantity', () => { const c=pm.response.json().cart; pm.expect(c).to.have.lengthOf(1); pm.expect(c[0].quantity).to.eql(2); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: populated product",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Product details', () => { const p=pm.response.json().cart[0].product; pm.expect(p._id).to.eql(pm.collectionVariables.get(\"productId\")); pm.expect(p.price).to.eql(2999); pm.expect(p.stock).to.eql(10); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: update quantity",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": 3}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Updated', () => { pm.expect(pm.response.json().cart[0].quantity).to.eql(3); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity 0",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": 0}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity -1",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": -1}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity 11",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": 11}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity '2'",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": \"2\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity 1.5",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": 1.5}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject quantity None",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": null}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: set stock limit",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"quantity\": 10}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: reject add beyond stock",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logout with saved wishlist and cart",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Log back in",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"{{newPassword}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: survives login",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Persisted', () => { pm.expect(pm.response.json().count).to.eql(1); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: survives login",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Persisted', () => { pm.expect(pm.response.json().cart[0].quantity).to.eql(10); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart: remove item",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/cart/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));",
+              "pm.test('Empty returned cart', () => { pm.expect(pm.response.json().cart).to.have.lengthOf(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: final removal",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Final logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/customers/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist: toggle requires login",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/wishlist/{{productId}}/toggle"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No password returned', () => pm.expect(pm.response.text()).not.to.include('\"password\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lab 06 \u2014 Checkout and Orders",
+      "description": "Run after Labs 01\u201305. Configure backend Razorpay test keys first. Complete successful test payment through the React checkout; fake signatures must always fail.",
+      "item": [
+        {
+          "name": "Orders require login",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login for Lab 06",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/customers/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject empty cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/create-payment-order",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"fullName\": \"Lab Tester\",\n    \"phone\": \"9876543210\",\n    \"addressLine1\": \"22 Test Road\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add checkout product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart/{{productId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject whitespace address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/create-payment-order",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"fullName\": \"Lab Tester\",\n    \"phone\": \"9876543210\",\n    \"addressLine1\": \"22 Test Road\",\n    \"city\": \" \",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create test payment order (requires test keys)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/create-payment-order",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"fullName\": \"Lab Tester\",\n    \"phone\": \"9876543210\",\n    \"addressLine1\": \"22 Test Road\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560001\"\n  },\n  \"totalAmount\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "if (data.shopKartOrderId) { pm.collectionVariables.set('shopKartOrderId', data.shopKartOrderId); pm.collectionVariables.set('razorpayOrderId', data.razorpayOrderId); }",
+                  "pm.test('Server total is in paise', () => pm.expect(data.amount).to.be.at.least(100));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cart preserved before payment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/cart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Cart still contains items', () => pm.expect(pm.response.json().cart.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject fake signature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/verify-payment",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shopKartOrderId\": \"{{shopKartOrderId}}\",\n  \"razorpay_order_id\": \"{{razorpayOrderId}}\",\n  \"razorpay_payment_id\": \"pay_fake\",\n  \"razorpay_signature\": \"0000000000000000000000000000000000000000000000000000000000000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pending order details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/{{shopKartOrderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Payment remains pending', () => pm.expect(pm.response.json().order.paymentStatus).to.eql('PENDING'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid order ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/orders/invalid"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
