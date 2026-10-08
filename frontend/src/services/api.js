@@ -1,5 +1,5 @@
 // Same-origin API calls keep secure login cookies working on Vercel.
-const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5001';
+const API_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:5001');
 
 // Share JSON handling and cookies across pages. options supplies method, body or abort signal.
 export async function api(path, options = {}) {

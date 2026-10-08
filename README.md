@@ -233,3 +233,24 @@ The repository root contains `vercel.json`. Vercel builds `frontend/dist` and ru
 Configure `MONGODB_URI` and `JWT_SECRET` as private Vercel production environment variables, with `NODE_ENV=production`. Add Razorpay **test** keys there to enable payments; they are not currently configured. Do not upload `.env` files. `.vercelignore` excludes local environment files and installed dependencies.
 
 Deploy from the repository root with `vercel --prod`. The initial deployment used the CLI; automatic GitHub deployment integration was not established. Atlas network access was configured for this lab with an explicitly approved `0.0.0.0/0` entry. Existing local records were not migrated, so Atlas starts with new application data.
+
+## Preview the sample product catalog locally
+
+The catalog in `backend/data/products.json` has 12 sample products: three each in Electronics, Fashion, Books and Home. Photos are bundled under `frontend/public/products`; source URLs are recorded there. These are demonstration products and prices.
+
+The preview uses a separate **local** database and does not insert products into the live Atlas database:
+
+```sh
+cd backend
+node scripts/seed-products.js --preview
+PORT=5002 MONGODB_URI=mongodb://127.0.0.1:27017/shopkart_catalog_preview node index.js
+```
+
+In another terminal:
+
+```sh
+cd frontend
+VITE_API_URL=http://localhost:5002 npm run dev
+```
+
+Open `http://localhost:5174`. Preview-only login: `preview@shopkart.test` / `ShopkartPreview123!`. This account is created only in the isolated local preview database. The seed is repeatable: it adds missing catalog products without replacing existing records. Production seeding requires an explicitly supplied `CATALOG_MONGODB_URI`; deploying frontend assets alone does not insert database products. The approved 12-product catalog is also published to the live Atlas database. The preview login remains local-only.
