@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>ShopKart</title>
+  <rect width="64" height="64" rx="16" fill="#234f3c"/>
+  <g fill="none" stroke="#f7f7f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 24h30l2 27H15l2-27Z"/>
+    <path d="M25 26v-7a7 7 0 0 1 14 0v7"/>
+  </g>
+</svg>
